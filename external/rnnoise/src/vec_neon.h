@@ -308,52 +308,37 @@ static inline void sparse_sgemv8x4(float *out, const float *w, const int *idx, i
    {
       int cols;
       cols = *idx++;
+      float * restrict y = &out[i];
       for (j=0;j<cols;j++)
       {
-         int pos;
-         float * restrict y;
-         float xj0, xj1, xj2, xj3;
-         pos = (*idx++);
-         xj0 = x[pos+0];
-         xj1 = x[pos+1];
-         xj2 = x[pos+2];
-         xj3 = x[pos+3];
-         y = &out[i];
-         y[0] += w[0]*xj0;
-         y[1] += w[1]*xj0;
-         y[2] += w[2]*xj0;
-         y[3] += w[3]*xj0;
-         y[4] += w[4]*xj0;
-         y[5] += w[5]*xj0;
-         y[6] += w[6]*xj0;
-         y[7] += w[7]*xj0;
-
-         y[0] += w[8]*xj1;
-         y[1] += w[9]*xj1;
-         y[2] += w[10]*xj1;
-         y[3] += w[11]*xj1;
-         y[4] += w[12]*xj1;
-         y[5] += w[13]*xj1;
-         y[6] += w[14]*xj1;
-         y[7] += w[15]*xj1;
-
-         y[0] += w[16]*xj2;
-         y[1] += w[17]*xj2;
-         y[2] += w[18]*xj2;
-         y[3] += w[19]*xj2;
-         y[4] += w[20]*xj2;
-         y[5] += w[21]*xj2;
-         y[6] += w[22]*xj2;
-         y[7] += w[23]*xj2;
-
-         y[0] += w[24]*xj3;
-         y[1] += w[25]*xj3;
-         y[2] += w[26]*xj3;
-         y[3] += w[27]*xj3;
-         y[4] += w[28]*xj3;
-         y[5] += w[29]*xj3;
-         y[6] += w[30]*xj3;
-         y[7] += w[31]*xj3;
+         int pos = (*idx++);
+         // Load xj0..xj3
+         float32x4_t xj = vld1q_f32(&x[pos]);
+         // Load w for xj0
+         float32x4_t w0 = vld1q_f32(&w[0]);
+         float32x4_t w1 = vld1q_f32(&w[4]);
+         // y[0..3] += w[0..3] * xj0, y[4..7] += w[4..7] * xj0
+         float32x4_t y0_3 = vld1q_f32(&y[0]);
+         float32x4_t y4_7 = vld1q_f32(&y[4]);
+         y0_3 = vmlaq_n_f32(y0_3, w0, vgetq_lane_f32(xj, 0));
+         y4_7 = vmlaq_n_f32(y4_7, w1, vgetq_lane_f32(xj, 0));
+         // w for xj1
+         w0 = vld1q_f32(&w[8]);
+         w1 = vld1q_f32(&w[12]);
+         y0_3 = vmlaq_n_f32(y0_3, w0, vgetq_lane_f32(xj, 1));
+         y4_7 = vmlaq_n_f32(y4_7, w1, vgetq_lane_f32(xj, 1));
+         // w for xj2
+         w0 = vld1q_f32(&w[16]);
+         w1 = vld1q_f32(&w[20]);
+         y0_3 = vmlaq_n_f32(y0_3, w0, vgetq_lane_f32(xj, 2));
+         y4_7 = vmlaq_n_f32(y4_7, w1, vgetq_lane_f32(xj, 2));
+         // w for xj3
+         w0 = vld1q_f32(&w[24]);
+         w1 = vld1q_f32(&w[28]);
+         y0_3 = vmlaq_n_f32(y0_3, w0, vgetq_lane_f32(xj, 3));
+         y4_7 = vmlaq_n_f32(y4_7, w1, vgetq_lane_f32(xj, 3));
+         vst1q_f32(&y[0], y0_3);
+         vst1q_f32(&y[4], y4_7);
          w += 32;
       }
    }

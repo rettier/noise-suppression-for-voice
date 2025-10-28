@@ -34,6 +34,8 @@ if(BUILD_RTCD)
         )
 endif()
 
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Ofast -fno-fast-math -ftree-vectorize -funroll-loops -ftree-loop-vectorize -finline-functions")
+
 add_library(RnNoise STATIC ${RN_NOISE_SRC})
 
 # Disable all warnings, since it's an external library.
